@@ -85,6 +85,15 @@ func vFlag(taskName string, flag domain.Flag, flagNames, flagShortNames map[stri
 				"the flag prompt type is invalid: task: %s, flag: %s, prompt: %s",
 				taskName, flag.Name, flag.Prompt.Type)
 		}
+
+		// For select and multi_select prompts, require either options or command
+		if flag.Prompt.Type == "select" || flag.Prompt.Type == "multi_select" {
+			if len(flag.Prompt.Options) == 0 && flag.Prompt.Command == "" {
+				return fmt.Errorf(
+					"select and multi_select prompts require either 'options' or 'command': task: %s, flag: %s",
+					taskName, flag.Name)
+			}
+		}
 	}
 
 	return nil
@@ -99,6 +108,24 @@ func vArg(taskName string, arg domain.Arg, argNames map[string]struct{}) error {
 			`the positional argument name duplicates: task: "%s", arg: "%s"`,
 			taskName, arg.Name)
 	}
+
+	if arg.Prompt.Type != "" {
+		if _, ok := flagTypes[arg.Prompt.Type]; !ok {
+			return fmt.Errorf(
+				"the arg prompt type is invalid: task: %s, arg: %s, prompt: %s",
+				taskName, arg.Name, arg.Prompt.Type)
+		}
+
+		// For select and multi_select prompts, require either options or command
+		if arg.Prompt.Type == "select" || arg.Prompt.Type == "multi_select" {
+			if len(arg.Prompt.Options) == 0 && arg.Prompt.Command == "" {
+				return fmt.Errorf(
+					"select and multi_select prompts require either 'options' or 'command': task: %s, arg: %s",
+					taskName, arg.Name)
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -190,7 +190,8 @@ flag.prompt | prompt | prompt | false | prompt is disabled
 prompt.type | string | prompt type | true |
 prompt.message | string | prompt message | false | `flag.name` or `arg.name`
 prompt.help | string | prompt help | false |
-prompt.options | []string | entries of `select` or `multi_select` prompt | true if the prompt type is `select` or `multi_select` |
+prompt.options | []string | entries of `select` or `multi_select` prompt | false | either `options` or `command` required for `select` and `multi_select`
+prompt.command | string | command to generate options for `select` or `multi_select` prompt | false | either `options` or `command` required for `select` and `multi_select`
 arg.name | string | the positional argument name | true |
 arg.usage | string | the positional argument usage | false | ""
 arg.default | string | the positional argument's default value | false | ""

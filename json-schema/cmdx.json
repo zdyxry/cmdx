@@ -148,6 +148,9 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "command": {
+          "type": "string"
         }
       },
       "additionalProperties": false,

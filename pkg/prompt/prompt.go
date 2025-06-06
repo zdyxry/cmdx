@@ -1,6 +1,10 @@
 package prompt
 
 import (
+	"bufio"
+	"os/exec"
+	"strings"
+
 	"github.com/AlecAivazis/survey/v2"
 )
 
@@ -13,6 +17,7 @@ type Prompt struct {
 	Message string   `json:"message,omitempty"`
 	Help    string   `json:"help,omitempty"`
 	Options []string `json:"options,omitempty"`
+	Command string   `json:"command,omitempty"`
 }
 
 func Create(prompt Prompt) survey.Prompt {
@@ -40,16 +45,42 @@ func Create(prompt Prompt) survey.Prompt {
 			Help:    prompt.Help,
 		}
 	case "select":
+		options := prompt.Options
+		if prompt.Command != "" {
+			cmdOptions, err := getOptionsFromCommand(prompt.Command)
+			if err != nil {
+				// Fall back to static options if command fails
+				if len(options) == 0 {
+					// If no fallback options, return nil to indicate prompt creation failed
+					return nil
+				}
+			} else {
+				options = cmdOptions
+			}
+		}
 		return &survey.Select{
 			Message: prompt.Message,
 			Help:    prompt.Help,
-			Options: prompt.Options,
+			Options: options,
 		}
 	case "multi_select":
+		options := prompt.Options
+		if prompt.Command != "" {
+			cmdOptions, err := getOptionsFromCommand(prompt.Command)
+			if err != nil {
+				// Fall back to static options if command fails
+				if len(options) == 0 {
+					// If no fallback options, return nil to indicate prompt creation failed
+					return nil
+				}
+			} else {
+				options = cmdOptions
+			}
+		}
 		return &survey.MultiSelect{
 			Message: prompt.Message,
 			Help:    prompt.Help,
-			Options: prompt.Options,
+			Options: options,
 		}
 	case "editor":
 		return &survey.Editor{
@@ -84,4 +115,40 @@ func GetValue(prompt survey.Prompt, typ string) (any, error) {
 		ans := ""
 		return ans, survey.AskOne(prompt, &ans)
 	}
+}
+
+func getOptionsFromCommand(command string) ([]string, error) {
+	// Use bash to execute the command (similar to how cmdx executes scripts)
+	var cmd *exec.Cmd
+	if _, err := exec.LookPath("bash"); err != nil {
+		cmd = exec.Command("sh", "-c", command)
+	} else {
+		cmd = exec.Command("bash", "-euo", "pipefail", "-c", command)
+	}
+
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	// Split output by lines and filter empty lines
+	scanner := bufio.NewScanner(strings.NewReader(string(output)))
+	var options []string
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" {
+			options = append(options, line)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	// Return empty slice instead of nil for consistency
+	if options == nil {
+		options = []string{}
+	}
+
+	return options, nil
 }
